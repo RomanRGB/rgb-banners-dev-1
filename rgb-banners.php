@@ -167,7 +167,6 @@ class RGB_Banners {
 	 * @param int $post_id
 	 * @param string $size
 	 */
-
 	public static function has_post_banner( $post_id, $post_type, $size = null ) {
 
 		$image_infos = self::get_post_image_infos( $post_id, $post_type );
@@ -197,7 +196,7 @@ class RGB_Banners {
 	 *
 	 * @return array
 	 */
-	public static function get_post_image_infos( $post_id, $post_type, $is_on_save = false ) {
+	public static function get_post_image_infos( $post_id, $post_type ) {
 
 		$meta_data = false;
 		$post_id = $post_id;
@@ -215,86 +214,7 @@ class RGB_Banners {
 		if ( ! $meta_data ) {
 			$meta_data = get_post_meta( $post_id, 'image', true );
 		}
-		// var_dump(get_post_meta($post_id,'cmb_banners_mode_select',true));
-		$as_is_mode = get_post_meta($post_id,'cmb_banners_mode_select',true);
-		if(!$is_on_save && $as_is_mode == 'as_is_mode'){
 
-
-		$field_names = array( 'b1x', 'b1x_short',/* 'b1x_square',*/ 'b2x', 'b2x_short', 'b3x', 'b3x_short', 'b4x', 'b4x_short', 'slider'/*, 'cover'*/ );
-			$banners = array();
-			$image_full_image_id = '';
-			$image_full_image_path = '';
-			$image_full_image_data = '';
-			$image_full_width = '';
-			$image_full_height = '';
-			$image_full_mime_type = '';
-			$image_full_banner_url = '';
-			
-			foreach ($field_names as $field_name) {
-				$banner_url = get_post_meta($post_id, $field_name . '_banner', true);
-				if ($banner_url) {
-					//$image_id = attachment_url_to_postid($banner_url);
-					$image_id = get_post_meta($post_id, $field_name . '_banner_id', true);
-					$image_path = get_attached_file($image_id);
-					$image_data = wp_get_attachment_metadata($image_id);
-					$width = '100%';
-					$height = 'auto';
-						$height = $image_data['height'];
-					if ($image_data && isset($image_data['width'], $image_data['height'],$image_data['file'])) {
-						$width = $image_data['width'];
-						$height = $image_data['height'];
-						$mime_type = wp_check_filetype($image_data['file'], null);
-					}
-			
-					$banner = array(
-						'name' => basename($image_path),
-						'path' => $image_path,
-						'infos' => array(
-							'100%',
-							'auto',
-							'bits' => 8,
-							'channels' => 3,
-							$mime_type['type']
-						),
-						'url' => $banner_url,
-					);
-					$banners[$field_name] = $banner;
-
-
-					if($field_name == 'b1x'){
-						$image_full_image_id = $image_id;
-						$image_full_image_path = $image_path;
-						$image_full_image_data = $image_data;
-						$image_full_width = $width;
-						$image_full_height = $height ;
-						$image_full_mime_type = $mime_type;
-						$image_full_banner_url =  $banner_url;
-
-					}
-				}
-			}
-			$banner_data = array(
-				"name" => basename($image_full_image_path),
-				"size" => filesize($image_full_image_path),
-				"path" => $image_full_image_path,
-				"url" => $image_full_banner_url,
-				'type' => $image_full_mime_type['type'],
-				"ext" => $image_full_mime_type['ext'],
-				"infos" => array(
-					$image_full_width,
-					$image_full_height,
-					2,
-					"width=\"$image_full_width\" height=\"$image_full_height\"",
-					8,
-					3,
-					$image_full_mime_type['type']
-				),
-				"banners" => $banners
-			);
-
-			
- 			$meta_data = $banner_data;
-		}
 		return $meta_data;
 	}
 
@@ -651,11 +571,6 @@ class RGB_Banners {
 			if ( has_post_banner( $post_id, $post_type ) ) :
 				$banner_style = get_post_meta( $post_id, 'banner-style', true );
 				$link = (get_post_meta($post_id, 'banner_link', true)!='') ? get_post_meta($post_id, 'banner_link', true) : '#';
-				// {JewishPhoenix} Develop "as is" banner mode
-				$as_is_mode = get_post_meta($post_id,'cmb_banners_mode_select',true);
-				if($as_is_mode == 'as_is_mode'){
-					$link = (get_post_meta($post_id, 'as_is_banner_url', true)!='') ? get_post_meta($post_id, 'as_is_banner_url', true) : '#';  
-				}
 			?>
 				<div class="banner b3x short">
 					<div class="media">
@@ -760,7 +675,7 @@ class RGB_Banners {
 		}
 
 		/* delete old image if it exists */
-		if ( false === self::remove_post_image( $post_id, $post_type, true ) ) {
+		if ( false === self::remove_post_image( $post_id, $post_type ) ) {
 			@ unlink( $new_file );
 
 			return $this->upload_error( $file, __( 'An error occurred when trying to remove the old image.', 'rgb-posts-banners' ) );
@@ -853,9 +768,9 @@ class RGB_Banners {
 	 * @param int $post_id
 	 * @param string $post_type
 	 */
-	public static function remove_post_image( $post_id, $post_type, $is_on_save = false ) {
+	public static function remove_post_image( $post_id, $post_type ) {
 
-		$infos = self::get_post_image_infos( $post_id, $post_type, $is_on_save );
+		$infos = self::get_post_image_infos( $post_id, $post_type );
 
 		if ( ! $infos ) {
 			return;
@@ -866,6 +781,7 @@ class RGB_Banners {
 			if ( false === self::remove_post_banners( $post_id, $post_type ) ) {
 				return false;
 			}
+
 			if ( ! @ unlink( $infos['path'] ) && file_exists( $infos['path'] ) ) {
 				return false;
 			}
@@ -917,7 +833,7 @@ class RGB_Banners {
 	 *
 	 * @return bool
 	 */
-	public static function remove_post_banner( $banner_name, $post_id, $post_type, $is_on_save = false ) {
+	public static function remove_post_banner( $banner_name, $post_id, $post_type ) {
 
 		if ( $banner_name == 'admin_banner' ) {
 			return;
@@ -932,11 +848,10 @@ class RGB_Banners {
 			return true;
 		}
 
-		$as_is_mode = ($is_on_save) ? get_post_meta($post_id,'cmb_banners_mode_select',true) : '';
-		if($as_is_mode == 'as_is_mode'){
-			if ( file_exists( $banner['path'] ) && ! @ unlink( $banner['path'] ) ) {
-				return false;
-			}
+		$banner = $infos['banners'][ $banner_name ];
+
+		if ( file_exists( $banner['path'] ) && ! @ unlink( $banner['path'] ) ) {
+			return false;
 		}
 		unset( $infos['banners'][ $banner_name ] );
 
@@ -1036,7 +951,7 @@ class RGB_Banners {
 		// removes obsolete banners
 		foreach ( $banners as $name => $size ) {
 			if ( ! isset( self::$banners_sizes[ $name ] ) ) {
-				self::remove_post_banner( $name, $post_id, $post_type, true );
+				self::remove_post_banner( $name, $post_id, $post_type );
 			}
 		}
 
@@ -1044,7 +959,7 @@ class RGB_Banners {
 		foreach ( self::$banners_sizes as $key => $size ) {
 
 			if ( ! empty( $banners[ $key ] ) ) {
-				self::remove_post_banner( $key, $post_id, $post_type, true );
+				self::remove_post_banner( $key, $post_id, $post_type );
 			}
 
 			$img = self::image_resize( $infos['path'], $size['width'], $size['height'], $size['crop'], $key );
